@@ -7,6 +7,6 @@
                   kernel,
                   stdlib
                  ]},
-  {mod, {saw_erl_app, []}},
+  {mod, {saw_app, []}},
   {env, [{acceptors, 2}]}
  ]}.

@@ -23,7 +23,8 @@
 
 -define(STAKT, {saw_taktgeber, {saw_taktgeber, start_link, []}, transient, 10000, worker, []}).
 -define(SPOS, {saw_position, {saw_position, start_link, []}, transient, 10000, worker, []}).
--define(SPUSH, {saw_push, {saw_push, start_link, []}, transient, 10000, worker, []}).
+-define(SWIN, {saw_sliding_w, {saw_sliding_w, start_link, []}, transient, 10000, worker, []}).
+-define(SWINTAKT, {saw_sliding_w_takt, {saw_sliding_w_takt, start_link, []}, transient, 10000, worker, []}).
 -define(SINPUT, {saw_input, {saw_input, start_link, []}, transient, 10000, worker, []}).
 %% --------------------------------------------------------------------
 %% External exports
@@ -42,4 +43,4 @@ start_link() ->
 init([]) ->
 	MaxRestart = 1,
     MaxTime = 10000,
-    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SPUSH, ?SINPUT]}}.
+    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SWIN, ?SWINTAKT, ?SINPUT]}}.

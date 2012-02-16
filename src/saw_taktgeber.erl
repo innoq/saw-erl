@@ -93,7 +93,7 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_info(timeout, State) ->
-	{ok, Socket} = gen_upd:open(?PORT),
+	{ok, Socket} = gen_udp:open(?PORT, []),
     {noreply, State#state{socket = Socket}};
 
 handle_info({udp, _Socket, IPtuple, InPortNo, Packet}, State) ->
