@@ -40,10 +40,12 @@
 %% External functions
 %% ====================================================================
 print(Spalten_index) ->
-	gen_server:cast(?MODULE, {print, Spalten_index}),
-	ok.
+	io:format("in print~n"),
+	gen_server:cast(?MODULE, {print, Spalten_index}).
+
 set_content(Content) ->
 	ok.
+
 scroll() ->
 	ok.
 %% --------------------------------------------------------------------
@@ -62,7 +64,7 @@ scroll() ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 start() ->
 	start_link().
@@ -101,8 +103,13 @@ handle_call(print, _From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_cast({print, Spalten_index}, State) ->
+	io:format("in handle cast~n"),
 	send_message(State, Spalten_index),
-    {noreply, State}.
+    {noreply, State};
+
+handle_cast(Msg, State) ->
+	io:format("~p~n", [Msg]),
+	{noreply, State}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_info/2
@@ -143,7 +150,7 @@ send_message(State, Spalten_index) ->
 
 
 prepare_dummy_array() ->
-	List = [1,2,4,8,16,32,16,8,4,2,1],
+	List = [1,2,4,8,16,32,64,128,64,32,16,8,4,2],
 	{length(List), List}.
 
 %% --------------------------------------------------------------------
