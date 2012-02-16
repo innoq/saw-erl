@@ -19,7 +19,7 @@
 %%% Created : 
 %%% -------------------------------------------------------------------
 -module(saw_position).
-
+-define(DELAY, 2 * 1000 div 256).
 -behaviour(gen_server).
 %% --------------------------------------------------------------------
 %% Include files
@@ -31,17 +31,18 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 -export([start/0]).
--export([nulldurchlauf/1]).
+-export([nulldurchlauf/2]).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
-nulldurchlauf(Durchlaufzeit) ->
-	ok.
+nulldurchlauf(T_abs, Durchlaufzeit) ->
+    gen_server:cast(?MODULE, {nulldurchlauf, T_abs, Durchlaufzeit}).
+
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {socket}).
+-record(state, {t_abs, durchlaufzeit}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -50,7 +51,7 @@ nulldurchlauf(Durchlaufzeit) ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 start() ->
 	start_link().
@@ -84,6 +85,11 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, State) ->
+    TimerRef = erlang:send_after(?DELAY, ?MODULE, {col, 64, up}),
+%%    error_logger:info_msg("start: col 64 up", []),
+    {noreply, #state{t_abs=T_abs, durchlaufzeit=Durchlaufzeit}};
+
 handle_cast(Msg, State) ->
     {noreply, State}.
 
@@ -94,6 +100,27 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+
+handle_info({col, 127, up}, State) ->
+    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, 127, down}),
+    error_logger:info_msg("col 127 up", []),
+    {noreply, State};
+
+handle_info({col, No, up}, State) ->
+    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No+1, up}),
+    error_logger:info_msg("col ~p up", [No]),
+    {noreply, State};
+
+handle_info({col, 0, down}, State) ->
+    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, 0, up}),
+    error_logger:info_msg("col 0 down", []),
+    {noreply, State};
+
+handle_info({col, No, down}, State) ->
+    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No-1, down}),
+    error_logger:info_msg("col ~p down", [No]),
+    {noreply, State};
+
 handle_info(Msg, State) ->	
     {noreply, State}.
 
@@ -118,6 +145,21 @@ code_change(OldVsn, State, Extra) ->
 %% --------------------------------------------------------------------
 send_message() ->
 	ok.
+
+col(No, Direction) ->
+    gen_server:cast(?MODULE, {col, No, Direction}).
+
+delay(Durchlaufzeit) ->
+    Durchlaufzeit div 256 div 1000.
+
+delay(Index, Direction, Durchlaufzeit, T_abs) ->
+    T_diff = timer:now_diff(erlang:now(), T_abs),
+    T_ist = T_diff rem Durchlaufzeit,
+    T_soll = sollDelay(),
+    (T_soll - T_ist) div 1000.
+
+sollDelay() ->
+     ok.
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
