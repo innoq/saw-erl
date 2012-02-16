@@ -44,10 +44,9 @@ start_link() ->
 %% ===================================================================
 init([]) ->
 	Ip = case os:getenv("WEBMACHINE_IP") of false -> "0.0.0.0"; Any -> Any end,
-	{ok, Dispatch} = file:consult("./priv/dispatch.conf"),
-	io:format("... ; ~p~n", [Dispatch]),
+	{ok, Dispatch} = file:consult("./priv/dispatch.conf"),	
 	WebConfig = [
-                 {ip, Ip},
+                 {ip, Ip},				
                  {backlog, 1000},
                  {port, 8002 },
                  {log_dir, "log/weblog"},
