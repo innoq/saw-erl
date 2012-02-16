@@ -26,6 +26,8 @@
 -define(SWIN, {saw_sliding_w, {saw_sliding_w, start_link, []}, transient, 10000, worker, []}).
 -define(SWINTAKT, {saw_sliding_w_takt, {saw_sliding_w_takt, start_link, []}, transient, 10000, worker, []}).
 -define(SINPUT, {saw_input, {saw_input, start_link, []}, transient, 10000, worker, []}).
+-define(WEBMACHINE(WebConfig), {webmachine_mochiweb, {webmachine_mochiweb, start, [WebConfig]}, permanent, 5000, worker, dynamic}).
+
 %% --------------------------------------------------------------------
 %% External exports
 %% --------------------------------------------------------------------
@@ -41,6 +43,15 @@ start_link() ->
 %% Supervisor callbacks
 %% ===================================================================
 init([]) ->
+	Ip = case os:getenv("WEBMACHINE_IP") of false -> "0.0.0.0"; Any -> Any end,
+	{ok, Dispatch} = file:consult("./priv/dispatch.conf"),
+	io:format("... ; ~p~n", [Dispatch]),
+	WebConfig = [
+                 {ip, Ip},
+                 {backlog, 1000},
+                 {port, 8002 },
+                 {log_dir, "log/weblog"},
+                 {dispatch, Dispatch}],
 	MaxRestart = 1,
     MaxTime = 10000,
-    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SWIN, ?SWINTAKT, ?SINPUT]}}.
+    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SWIN, ?SWINTAKT, ?SINPUT, ?WEBMACHINE(WebConfig)]}}.

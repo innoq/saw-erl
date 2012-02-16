@@ -27,7 +27,7 @@
 %% --------------------------------------------------------------------
 %% External exports
 %% --------------------------------------------------------------------
--export([init/1,  allowed_methods/2, resource_exists/2]).
+-export([init/1,  allowed_methods/2, resource_exists/2, post_is_create/2, process_post/2]).
 -include_lib("../deps/webmachine/include/webmachine.hrl").
 %% --------------------------------------------------------------------
 %% record definitions
@@ -43,9 +43,13 @@ init(_Config) ->
 allowed_methods(ReqData, Context) ->
     {['POST'], ReqData, Context}.
 
-to_html(ReqData, Context) ->
-     {ok, Content} = about_dtl:render([{version, wurfler:getVersion()}]),
-     {Content, ReqData, Context}.
+post_is_create(ReqData, Context) ->
+	{false, ReqData, Context}.
+
+process_post(ReqData, Context) ->
+	
+	saw_sliding_w:set_content("Content"),
+	{true, ReqData, Context}.
 
 resource_exists(ReqData, Context) ->
 	{true, ReqData, Context}.
