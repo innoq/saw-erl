@@ -23,29 +23,39 @@
 -behaviour(gen_server).
 %% --------------------------------------------------------------------
 %% Include files
-%% --------------------------------------------------------------------
+%% -------------------------------------------------------------------
 %% --------------------------------------------------------------------
 %% External exports
 
 %% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3, send_message_test/0]).
 -export([start_link/0]).
 -export([start/0]).
 -export([print/1, set_content/1, scroll/0]).
+
+-define(PORT, 13664).
+-define(HOST, {127,0,0,1}).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
 print(Spalten_index) ->
-	ok.
+	io:format("in print~n"),
+	gen_server:cast(?MODULE, {print, Spalten_index}).
+
 set_content(Content) ->
 	ok.
+
 scroll() ->
 	ok.
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {content = "Das ist der default"}).
+-record(state, {	
+					contentraw = "Das ist der default",
+					content,
+					contentlength,
+			   		sawsock}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -54,7 +64,7 @@ scroll() ->
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 start() ->
 	start_link().
@@ -67,7 +77,9 @@ start() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok, #state{}, 0}.
+	{ok, Socket} = gen_udp:open(13000),
+	{ContentLength, Content} = prepare_dummy_array(),
+    {ok, #state{sawsock=Socket, content=Content, contentlength=ContentLength}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -79,8 +91,10 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call(Msg, _From, State) ->
+handle_call(print, _From, State) ->
 	{reply, ok, State}.
+
+
 %% --------------------------------------------------------------------
 %% Function: handle_cast/2
 %% Description: Handling cast messages
@@ -88,8 +102,14 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+handle_cast({print, Spalten_index}, State) ->
+	io:format("in handle cast~n"),
+	send_message(State, Spalten_index),
+    {noreply, State};
+
 handle_cast(Msg, State) ->
-    {noreply, State}.
+	io:format("~p~n", [Msg]),
+	{noreply, State}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_info/2
@@ -120,11 +140,37 @@ code_change(OldVsn, State, Extra) ->
 %% --------------------------------------------------------------------
 %%% Internal functions
 %% --------------------------------------------------------------------
-send_message() ->
+send_message(State, Spalten_index) ->
+	ByteIndex = Spalten_index rem State#state.contentlength,
+	Byte = lists:nth(ByteIndex+1, State#state.content),
+	
+	Resp= gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<Byte:8>>),
+	io:format("ByteIndex: ~p => ~p => ~p~n", [ByteIndex, Byte, Resp]),
 	ok.
+
+
+prepare_dummy_array() ->
+	List = [1,2,4,8,16,32,64,128,64,32,16,8,4,2],
+	{length(List), List}.
+
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
+send_message_test() ->
+	{ok, State, _} = init([]),
+	io:format("~n~p_~p~n", [State#state.content, State#state.contentlength]),
+	Seq = lists:seq(1, 100000),
+	send_message_thelper(Seq, State),
+	gen_udp:close(State#state.sawsock).
+	
+send_message_thelper([], _) -> ok;
+send_message_thelper([H|T], State) -> 
+	send_message(State, H),
+	send_message_thelper(T, State).
+	
+	
+	
+	
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------

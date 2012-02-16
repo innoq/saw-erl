@@ -103,22 +103,26 @@ handle_cast(Msg, State) ->
 
 handle_info({col, 127, up}, State) ->
     erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, 127, down}),
-    error_logger:info_msg("col 127 up", []),
+%    error_logger:info_msg("col 127 up", []),
+    saw_sliding_w:print(127),
     {noreply, State};
 
 handle_info({col, No, up}, State) ->
     erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No+1, up}),
-    error_logger:info_msg("col ~p up", [No]),
+%    error_logger:info_msg("col ~p up", [No]),
+    saw_sliding_w:print(No),
     {noreply, State};
 
 handle_info({col, 0, down}, State) ->
     erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, 0, up}),
-    error_logger:info_msg("col 0 down", []),
+%    error_logger:info_msg("col 0 down", []),
+    saw_sliding_w:print(0),
     {noreply, State};
 
 handle_info({col, No, down}, State) ->
     erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No-1, down}),
-    error_logger:info_msg("col ~p down", [No]),
+%    error_logger:info_msg("col ~p down", [No]),
+    saw_sliding_w:print(No),
     {noreply, State};
 
 handle_info(Msg, State) ->	
@@ -150,7 +154,8 @@ col(No, Direction) ->
     gen_server:cast(?MODULE, {col, No, Direction}).
 
 delay(Durchlaufzeit) ->
-    Durchlaufzeit div 256 div 1000.
+    Delay = (Durchlaufzeit div 256) div 1000,
+    error_log:info_msg("Durchlaufzeit ~p, Delay ~p", [Durchlaufzeit, Delay]).
 
 delay(Index, Direction, Durchlaufzeit, T_abs) ->
     T_diff = timer:now_diff(erlang:now(), T_abs),
