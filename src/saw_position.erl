@@ -42,6 +42,7 @@ nulldurchlauf(T_abs, Durchlaufzeit) ->
 change_offset(Offset) ->
     gen_server:cast(?MODULE, {change_offset, Offset}).
 
+
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
@@ -67,7 +68,7 @@ start() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok, #state{time={0,0}, col={63, up}, offset=0, run_state=ready}, 0}.
+    {ok, #state{time={0,0}, col={64, up}, offset=0, run_state=ready}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -93,8 +94,9 @@ handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col
 		  running ->
 		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}};
 		  ready ->
-		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
-		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
+		       {NextCol, NextDirection, Delay} = find_next_column(64 + Offset, up, Durchlaufzeit, T_abs),
+		       erlang:send_after(Delay, ?MODULE, column_changed),
+		       State#state{time={T_abs, Durchlaufzeit}, col={NextCol, NextDirection}, run_state=running};
 		  stopped ->
 		      State
     end,
@@ -115,10 +117,10 @@ handle_cast(Msg, State) ->
 %% --------------------------------------------------------------------
 
 handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
-    {NextCol, NextDirection} = next_column(Col, Direction),
-    erlang:send_after(delay(TRun), ?MODULE, column_changed),
+    {NextCol, NextDirection, Delay} = find_next_column(Col, Direction, TRun, TAbs),
+    erlang:send_after(Delay, ?MODULE, column_changed),
 %    error_logger:info_msg("Current col:~p", [NextCol]),
-    saw_sliding_w:print(NextCol),
+    saw_sliding_w:print(Col),
     {noreply, State#state{col={NextCol, NextDirection}}};
 
 handle_info(Msg, State) ->	
@@ -155,6 +157,17 @@ next_column(N, down) ->
 next_column(N, up) ->
     {N+1, up}.
 
+find_next_column(Column, Direction, TRun, TAbs) ->
+    {NextCol, NextDirection} = next_column(Column, Direction),
+    Delay = delay(NextCol, NextDirection, TRun, TAbs),
+    if
+	Delay >= 0 ->
+	    {NextCol, NextDirection, Delay};
+	true ->
+	    error_logger:info_msg("Skipping column ~p, ~p", [NextCol, NextDirection]),
+	    find_next_column(NextCol, NextDirection, TRun, TAbs)
+    end.
+
 
 delay(Durchlaufzeit) ->
     Delay = (Durchlaufzeit div 256) div 1000,
@@ -164,15 +177,16 @@ delay(Durchlaufzeit) ->
 delay(Index, Direction, Durchlaufzeit, T_abs) ->
     T_diff = timer:now_diff(erlang:now(), T_abs),
     T_ist = T_diff rem Durchlaufzeit,
-    T_soll = winkel((Index / 63.5 - 1), Direction, Durchlaufzeit),
+    T_soll = erlang:round(winkel((Index / 63.5 - 1), Direction, Durchlaufzeit) * Durchlaufzeit / (2 * math:pi())),
+%    error_logger:info_msg("Index: ~p, Direction: ~p, T_ist: ~p, T_soll: ~p", [Index, Direction, T_ist, T_soll]),
     (T_soll - T_ist) div 1000.
 
-winkel(Y , up, Durchlaufzeit) when Y < 0 ->	
+winkel(Y , down, Durchlaufzeit) when Y < 0 ->	
 	math:pi() - math:asin(Y);
 winkel(Y, up, Durchlaufzeit) ->	
 	math:asin(Y);
-winkel(Y, down, Durchlaufzeit) when Y < 0->	
-	math:asin(Y) + 2 * math:pi();
+winkel(Y, up, Durchlaufzeit) when Y < 0 ->	
+	math:asin(Y) + (2 * math:pi());
 winkel(Y, down, Durchlaufzeit) ->	
 	math:pi() - math:asin(Y).
 
