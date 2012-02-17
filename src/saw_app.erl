@@ -20,12 +20,12 @@ ensure_started(App) ->
 start() ->
 	ensure_started(crypto),
     ensure_started(webmachine),
-	application:start(?MODULE).
+	ensure_started(?MODULE).
 
 start(_StartType, _StartArgs) ->
 	ensure_started(crypto),
     ensure_started(webmachine),
-	application:start(?MODULE).
+	saw_sup:start().
 
 stop(_State) ->	
     ok.
