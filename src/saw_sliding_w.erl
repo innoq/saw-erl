@@ -40,19 +40,17 @@
 %% External functions
 %% ====================================================================
 print(Spalten_index) ->
-	io:format("in print~n"),
 	gen_server:cast(?MODULE, {print, Spalten_index}).
 
 set_content(Content) ->
-	ok.
+	gen_server:cast(?MODULE, {set_content, Content}).
 
 scroll() ->
-	ok.
+	gen_server:cast(?MODULE, {scroll}).
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {	
-					contentraw = "Das ist der default",
+-record(state, {	contentraw = "Das ist der default",
 					content,
 					contentlength,
 			   		sawsock}).
@@ -91,7 +89,7 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_call(print, _From, State) ->
+handle_call(Msg, _From, State) ->
 	{reply, ok, State}.
 
 
@@ -102,14 +100,15 @@ handle_call(print, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({print, Spalten_index}, State) ->
-	io:format("in handle cast~n"),
+handle_cast({print, Spalten_index}, State) ->	
 	send_message(State, Spalten_index),
     {noreply, State};
 
-handle_cast(Msg, State) ->
-	io:format("~p~n", [Msg]),
-	{noreply, State}.
+handle_cast({scroll}, State) ->		
+    {noreply, State};
+
+handle_cast({set_content, Content}, State) ->	
+	{noreply, State#state{content = Content, contentlength = erlang:length(Content)}}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_info/2
@@ -145,9 +144,8 @@ send_message(State, Spalten_index) ->
 	Byte = lists:nth(ByteIndex+1, State#state.content),
 	
 	Resp= gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<Byte:8>>),
-	io:format("ByteIndex: ~p => ~p => ~p~n", [ByteIndex, Byte, Resp]),
+%%	io:format("ByteIndex: ~p => ~p => ~p~n", [ByteIndex, Byte, Resp]),
 	ok.
-
 
 prepare_dummy_array() ->
 	List = [1,2,4,8,16,32,64,128,64,32,16,8,4,2],
@@ -156,12 +154,7 @@ prepare_dummy_array() ->
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
-send_message_test() ->
-	{ok, State, _} = init([]),
-	io:format("~n~p_~p~n", [State#state.content, State#state.contentlength]),
-	Seq = lists:seq(1, 100000),
-	send_message_thelper(Seq, State),
-	gen_udp:close(State#state.sawsock).
+
 	
 send_message_thelper([], _) -> ok;
 send_message_thelper([H|T], State) -> 
@@ -169,11 +162,16 @@ send_message_thelper([H|T], State) ->
 	send_message_thelper(T, State).
 	
 	
-	
-	
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+
+send_message_test() ->
+	{ok, State, _} = init([]),
+	%%io:format("~n~p_~p~n", [State#state.content, State#state.contentlength]),
+	Seq = lists:seq(1, 100000),
+	send_message_thelper(Seq, State),
+	gen_udp:close(State#state.sawsock).
 -endif.

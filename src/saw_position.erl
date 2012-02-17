@@ -108,7 +108,7 @@ handle_info({col, 127, up}, State) ->
     {noreply, State};
 
 handle_info({col, No, up}, State) ->
-    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No+1, up}),
+    erlang:send_after(delay(State#state.durchlaufzeit), ?MODULE, {col, No + 1, up}),
 %    error_logger:info_msg("col ~p up", [No]),
     saw_sliding_w:print(No),
     {noreply, State};
@@ -155,16 +155,24 @@ col(No, Direction) ->
 
 delay(Durchlaufzeit) ->
     Delay = (Durchlaufzeit div 256) div 1000,
-    error_log:info_msg("Durchlaufzeit ~p, Delay ~p", [Durchlaufzeit, Delay]).
+ %%   error_logger:info_msg("Durchlaufzeit ~p, Delay ~p", [Durchlaufzeit, Delay]),
+	Delay.
 
 delay(Index, Direction, Durchlaufzeit, T_abs) ->
     T_diff = timer:now_diff(erlang:now(), T_abs),
     T_ist = T_diff rem Durchlaufzeit,
-    T_soll = sollDelay(),
+    T_soll = winkel((Index / 63.5 - 1), Direction, Durchlaufzeit),
     (T_soll - T_ist) div 1000.
 
-sollDelay() ->
-     ok.
+winkel(Y , up, Durchlaufzeit) when Y < 0 ->	
+	math:pi() - math:asin(Y);
+winkel(Y, up, Durchlaufzeit) ->	
+	math:asin(Y);
+winkel(Y, down, Durchlaufzeit) when Y < 0->	
+	math:asin(Y) + 2 * math:pi();
+winkel(Y, down, Durchlaufzeit) ->	
+	math:pi() - math:asin(Y).
+
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------

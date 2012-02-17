@@ -92,7 +92,13 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_info(Msg, State) ->	
+handle_info(timeout, State) ->
+	start_timer(),
+    {noreply, State};
+
+handle_info({timeout, do_work}, State) ->	
+	start_timer(),
+	saw_sliding_w:scroll(),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -114,8 +120,9 @@ code_change(OldVsn, State, Extra) ->
 %% --------------------------------------------------------------------
 %%% Internal functions
 %% --------------------------------------------------------------------
-send_message() ->
-	ok.
+start_timer() ->
+	erlang:send_after(1 * 500, self(), {timeout, do_work}).
+	
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
