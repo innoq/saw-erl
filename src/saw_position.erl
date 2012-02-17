@@ -88,10 +88,10 @@ handle_call(Msg, _From, State) ->
 handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, run_state=RunState}=State) ->
     NewState = case RunState of
 		  running ->
-		      #state{time={T_abs, Durchlaufzeit}, col={64, up}, run_state=RunState};
+		      #state{time={T_abs, Durchlaufzeit}, col={66, up}, run_state=RunState};
 		  ready ->
 		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
-		      #state{time={T_abs, Durchlaufzeit}, col={64, up}, run_state=running};
+		      #state{time={T_abs, Durchlaufzeit}, col={66, up}, run_state=running};
 		  stopped ->
 		      State
     end,
@@ -110,11 +110,11 @@ handle_cast(Msg, State) ->
 %% --------------------------------------------------------------------
 
 handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, run_state=RunState}=State) ->
-    NextCol = next_column(Col, Direction),
+    {NextCol, Dir} = next_column(Col, Direction),
     erlang:send_after(delay(TRun), ?MODULE, column_changed),
     error_logger:info_msg("Current col:p~", [NextCol]),
     saw_sliding_w:print(NextCol),
-    {noreply, state};
+    {noreply, State#state{col={NextCol, Dir}}};
 
 handle_info(Msg, State) ->	
     {noreply, State}.
