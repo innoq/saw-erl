@@ -183,12 +183,12 @@ delay(Index, Direction, Durchlaufzeit, T_abs) ->
 
 winkel(Y , down, Durchlaufzeit) when Y < 0 ->	
 	math:pi() - math:asin(Y);
-winkel(Y, up, Durchlaufzeit) ->	
-	math:asin(Y);
+winkel(Y, down, Durchlaufzeit) ->	
+	math:pi() - math:asin(Y);
 winkel(Y, up, Durchlaufzeit) when Y < 0 ->	
 	math:asin(Y) + (2 * math:pi());
-winkel(Y, down, Durchlaufzeit) ->	
-	math:pi() - math:asin(Y).
+winkel(Y, up, Durchlaufzeit) ->	
+	math:asin(Y).
 
 %% --------------------------------------------------------------------
 %%% Test functions
@@ -207,7 +207,7 @@ winkel_test() ->
 	?assertEqual(math:pi() ,winkel(0, down, 2000)),
 	?assertEqual(erlang:round(5 * math:pi() /4 * 10000) , erlang:round(winkel(math:sin(5 * math:pi() / 4) , down, 2000) * 10000)),
 	?assertEqual(3 * math:pi() / 2 ,winkel(-1, down, 2000)),
- 	?assertEqual(3 * math:pi() / 2 ,winkel(-1, up, 2000)),
+	?assertEqual(3 * math:pi() / 2 ,winkel(-1, up, 2000)),	
 	?assertEqual(erlang:round(7 * math:pi() /4 * 10000) , erlang:round(winkel(math:sin(7 * math:pi() / 4) , up, 2000) * 10000)).
 	
 -endif.
