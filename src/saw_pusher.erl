@@ -18,12 +18,12 @@
 %%%
 %%% Created : 
 %%% -------------------------------------------------------------------
--module(saw_position).
--define(DELAY, 2 * 1000 div 256).
+-module(saw_pusher).
+
 -behaviour(gen_server).
 %% --------------------------------------------------------------------
 %% Include files
-%% --------------------------------------------------------------------
+%% -------------------------------------------------------------------
 %% --------------------------------------------------------------------
 %% External exports
 
@@ -31,21 +31,21 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 -export([start/0]).
--export([nulldurchlauf/2, change_offset/1]).
+-export([nulldurchlauf/2]).
+
+-define(PORT, 13666).
+-define(HOST, {127,0,0,1}).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
-nulldurchlauf(T_abs, Durchlaufzeit) ->
-    gen_server:cast(?MODULE, {nulldurchlauf, T_abs, Durchlaufzeit}).
-
-change_offset(Offset) ->
-    gen_server:cast(?MODULE, {change_offset, Offset}).
+nulldurchlauf(T_absolut, T_delta) ->
+	gen_server:cast(?MODULE, {nulldurchlauf, T_absolut, T_delta}).
 
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {time, col, offset, run_state}).
+-record(state, {sawsock}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -67,7 +67,8 @@ start() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok, #state{time={0,0}, col={63, up}, offset=0, run_state=ready}, 0}.
+	{ok, Socket} = gen_udp:open(13001),
+    {ok, #state{sawsock=Socket}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -81,6 +82,8 @@ init([]) ->
 %% --------------------------------------------------------------------
 handle_call(Msg, _From, State) ->
 	{reply, ok, State}.
+
+
 %% --------------------------------------------------------------------
 %% Function: handle_cast/2
 %% Description: Handling cast messages
@@ -88,22 +91,12 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
-    NewState = case RunState of
-		  running ->
-		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}};
-		  ready ->
-		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
-		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
-		  stopped ->
-		      State
-    end,
-%%    error_logger:info_msg("start: col 64 up", []),
-    {noreply, NewState};
-handle_cast({change_offset, Offset}, State) ->
-    {noreply, State#state{offset=Offset}};
+handle_cast({nulldurchlauf, T_absolut, T_delta}, State) ->
+	erlang:send_after((T_delta div 4000) , ?MODULE, sendnow),
+	erlang:send_after((T_delta div 1333), ?MODULE, sendnow),
+    {noreply, State};
 
-handle_cast(Msg, State) ->
+handle_cast(Msg, State) ->		
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -113,15 +106,12 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+handle_info(sendnow, State) -> 
+	io:format("Pushing Now~n"),
+	gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<0:0>>),
+	{noreply, State};
 
-handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
-    {NextCol, NextDirection} = next_column(Col, Direction),
-    erlang:send_after(delay(TRun), ?MODULE, column_changed),
-%    error_logger:info_msg("Current col:~p", [NextCol]),
-    saw_sliding_w:print(NextCol),
-    {noreply, State#state{col={NextCol, NextDirection}}};
-
-handle_info(Msg, State) ->	
+handle_info(Msg, State) ->		
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -143,42 +133,11 @@ code_change(OldVsn, State, Extra) ->
 %% --------------------------------------------------------------------
 %%% Internal functions
 %% --------------------------------------------------------------------
-send_message() ->
-	ok.
-
-next_column(0, down) ->
-    {0, up};
-next_column(127, up) ->
-    {127, down};
-next_column(N, down) ->
-    {N-1, down};
-next_column(N, up) ->
-    {N+1, up}.
-
-
-delay(Durchlaufzeit) ->
-    Delay = (Durchlaufzeit div 256) div 1000,
- %%   error_logger:info_msg("Durchlaufzeit ~p, Delay ~p", [Durchlaufzeit, Delay]),
-	Delay.
-
-delay(Index, Direction, Durchlaufzeit, T_abs) ->
-    T_diff = timer:now_diff(erlang:now(), T_abs),
-    T_ist = T_diff rem Durchlaufzeit,
-    T_soll = winkel((Index / 63.5 - 1), Direction, Durchlaufzeit),
-    (T_soll - T_ist) div 1000.
-
-winkel(Y , up, Durchlaufzeit) when Y < 0 ->	
-	math:pi() - math:asin(Y);
-winkel(Y, up, Durchlaufzeit) ->	
-	math:asin(Y);
-winkel(Y, down, Durchlaufzeit) when Y < 0->	
-	math:asin(Y) + 2 * math:pi();
-winkel(Y, down, Durchlaufzeit) ->	
-	math:pi() - math:asin(Y).
 
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
+
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
