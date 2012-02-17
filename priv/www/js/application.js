@@ -64,6 +64,8 @@
 			return false;
 		});
 
+		renderText($("#text").val(), $("#font").val(), $("#baseline").val());
+
 	});
 
 	}(jQuery))
