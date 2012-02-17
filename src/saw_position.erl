@@ -91,7 +91,7 @@ handle_call(Msg, _From, State) ->
 handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
     NewState = case RunState of
 		  running ->
-		      State#state{time={T_abs, Durchlaufzeit}, col={64, up}};
+		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}};
 		  ready ->
 		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
 		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
@@ -101,7 +101,7 @@ handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col
 %%    error_logger:info_msg("start: col 64 up", []),
     {noreply, NewState};
 handle_cast({change_offset, Offset}, State) ->
-    {norpely, State#state{offset=Offset}};
+    {noreply, State#state{offset=Offset}};
 
 handle_cast(Msg, State) ->
     {noreply, State}.
@@ -117,7 +117,7 @@ handle_cast(Msg, State) ->
 handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
     {NextCol, NextDirection} = next_column(Col, Direction),
     erlang:send_after(delay(TRun), ?MODULE, column_changed),
-    error_logger:info_msg("Current col:~p", [NextCol]),
+%    error_logger:info_msg("Current col:~p", [NextCol]),
     saw_sliding_w:print(NextCol),
     {noreply, State#state{col={NextCol, NextDirection}}};
 
