@@ -91,10 +91,10 @@ handle_call(Msg, _From, State) ->
 handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
     NewState = case RunState of
 		  running ->
-		      #state{time={T_abs, Durchlaufzeit}, col={64, up}};
+		      State#state{time={T_abs, Durchlaufzeit}, col={64, up}};
 		  ready ->
 		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
-		      #state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
+		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
 		  stopped ->
 		      State
     end,
