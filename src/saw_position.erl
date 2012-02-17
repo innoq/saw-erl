@@ -89,10 +89,10 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
+handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{offset=Offset, run_state=RunState}=State) ->
     NewState = case RunState of
 		  running ->
-		      State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}};
+		       State#state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}};
 		  ready ->
 		       {NextCol, NextDirection, Delay} = find_next_column(64 + Offset, up, Durchlaufzeit, T_abs),
 		       erlang:send_after(Delay, ?MODULE, column_changed),
@@ -149,9 +149,9 @@ send_message() ->
 	ok.
 
 next_column(0, down) ->
-    {0, up};
+    {1, up};
 next_column(127, up) ->
-    {127, down};
+    {126, down};
 next_column(N, down) ->
     {N-1, down};
 next_column(N, up) ->
@@ -164,21 +164,26 @@ find_next_column(Column, Direction, TRun, TAbs) ->
 	Delay >= 0 ->
 	    {NextCol, NextDirection, Delay};
 	true ->
-	    error_logger:info_msg("Skipping column ~p, ~p", [NextCol, NextDirection]),
+	    error_logger:info_msg("Skipping column ~p, ~p, Delay:~p", [NextCol, NextDirection, Delay]),
 	    find_next_column(NextCol, NextDirection, TRun, TAbs)
     end.
 
 
 delay(Durchlaufzeit) ->
-    Delay = (Durchlaufzeit div 256) div 1000,
+    Delay = (Durchlaufzeit div 254) div 1000,
  %%   error_logger:info_msg("Durchlaufzeit ~p, Delay ~p", [Durchlaufzeit, Delay]),
 	Delay.
 
 delay(Index, Direction, Durchlaufzeit, T_abs) ->
     T_diff = timer:now_diff(erlang:now(), T_abs),
-    T_ist = T_diff rem Durchlaufzeit,
     T_soll = erlang:round(winkel((Index / 63.5 - 1), Direction, Durchlaufzeit) * Durchlaufzeit / (2 * math:pi())),
 %    error_logger:info_msg("Index: ~p, Direction: ~p, T_ist: ~p, T_soll: ~p", [Index, Direction, T_ist, T_soll]),
+    if
+	T_soll - T_diff < -Durchlaufzeit/2 ->
+	    T_ist = T_diff - Durchlaufzeit;
+	true ->
+	    T_ist = T_diff rem Durchlaufzeit
+    end,
     (T_soll - T_ist) div 1000.
 
 winkel(Y , down, Durchlaufzeit) when Y < 0 ->	
