@@ -31,7 +31,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 -export([start/0]).
--export([nulldurchlauf/2]).
+-export([nulldurchlauf/2, change_offset/1]).
 
 %% ====================================================================
 %% External functions
@@ -39,10 +39,13 @@
 nulldurchlauf(T_abs, Durchlaufzeit) ->
     gen_server:cast(?MODULE, {nulldurchlauf, T_abs, Durchlaufzeit}).
 
+change_offset(Offset) ->
+    gen_server:cast(?MODULE, {change_offset, Offset}).
+
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {time, col, run_state}).
+-record(state, {time, col, offset, run_state}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -64,7 +67,7 @@ start() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok, #state{time={0,0}, col={63, up}, run_state=ready}, 0}.
+    {ok, #state{time={0,0}, col={63, up}, offset=0, run_state=ready}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -85,18 +88,20 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, run_state=RunState}=State) ->
+handle_cast({nulldurchlauf, T_abs, Durchlaufzeit}, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
     NewState = case RunState of
 		  running ->
-		      #state{time={T_abs, Durchlaufzeit}, col={64, up}, run_state=RunState};
+		      #state{time={T_abs, Durchlaufzeit}, col={64, up}};
 		  ready ->
 		      TimerRef = erlang:send_after(delay(Durchlaufzeit), ?MODULE, column_changed),
-		      #state{time={T_abs, Durchlaufzeit}, col={64, up}, run_state=running};
+		      #state{time={T_abs, Durchlaufzeit}, col={64 + Offset, up}, run_state=running};
 		  stopped ->
 		      State
     end,
 %%    error_logger:info_msg("start: col 64 up", []),
     {noreply, NewState};
+handle_cast({change_offset, Offset}, State) ->
+    {norpely, State#state{offset=Offset}};
 
 handle_cast(Msg, State) ->
     {noreply, State}.
@@ -109,12 +114,12 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 
-handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, run_state=RunState}=State) ->
-    NextCol = next_column(Col, Direction),
+handle_info(column_changed, #state{time={TAbs, TRun}, col={Col, Direction}, offset=Offset, run_state=RunState}=State) ->
+    {NextCol, NextDirection} = next_column(Col, Direction),
     erlang:send_after(delay(TRun), ?MODULE, column_changed),
-    error_logger:info_msg("Current col:p~", [NextCol]),
+    error_logger:info_msg("Current col:~p", [NextCol]),
     saw_sliding_w:print(NextCol),
-    {noreply, state};
+    {noreply, State#state{col={NextCol, NextDirection}}};
 
 handle_info(Msg, State) ->	
     {noreply, State}.
