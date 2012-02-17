@@ -68,12 +68,22 @@
 			</div>
 
 			<div class="control-group">
+				<label class="control-label" for="text">Font:</label>
+				<div class="controls">
+					<input type="text" id="font" name="font" value="10px monospace">
+					<span class="help-inline"></span>
+				</div>
+			</div>
+
+			<div class="control-group">
 				<label class="control-label" for="text">Preview:</label>
 				<div class="controls">
 					<canvas id="canvas" class="well" style="min-height: 0px; padding: 0; background-color: black">
 				</div>
+				<div class="controls">
+					<canvas id="canvas2" class="well" style="min-height: 0px; padding: 0; background-color: black">
+				</div>
 			</div>
-
 
 			<div class="form-actions">
 				<button type="submit" class="btn btn-primary">Save changes</button>
