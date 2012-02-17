@@ -1,0 +1,12 @@
+{application, saw_app,
+ [
+  {description, ""},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, {saw_app, []}},
+  {env, [{acceptors, 2}]}
+ ]}.
