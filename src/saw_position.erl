@@ -184,4 +184,6 @@ winkel(Y, down, Durchlaufzeit) ->
 %% --------------------------------------------------------------------
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
+winkel_test() ->
+	winkel(-1, up, 2000).
 -endif.
