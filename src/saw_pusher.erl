@@ -18,13 +18,12 @@
 %%%
 %%% Created : 
 %%% -------------------------------------------------------------------
--module(saw_taktgeber).
+-module(saw_pusher).
 
 -behaviour(gen_server).
--define(PORT, 13665).
 %% --------------------------------------------------------------------
 %% Include files
-%% --------------------------------------------------------------------
+%% -------------------------------------------------------------------
 %% --------------------------------------------------------------------
 %% External exports
 
@@ -32,14 +31,21 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 -export([start/0]).
+-export([nulldurchlauf/2]).
+
+-define(PORT, 13666).
+-define(HOST, {127,0,0,1}).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
+nulldurchlauf(T_absolut, T_delta) ->
+	gen_server:cast(?MODULE, {nulldurchlauf, T_absolut, T_delta}).
+
 %% --------------------------------------------------------------------
 %% record definitions
 %% --------------------------------------------------------------------
--record(state, {socket}).
+-record(state, {sawsock}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -48,7 +54,7 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link() ->
-    gen_server:start_link({global, ?MODULE}, ?MODULE, [], []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 start() ->
 	start_link().
@@ -61,7 +67,8 @@ start() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) ->
-    {ok, #state{}, 0}.
+	{ok, Socket} = gen_udp:open(13001),
+    {ok, #state{sawsock=Socket}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -75,6 +82,8 @@ init([]) ->
 %% --------------------------------------------------------------------
 handle_call(Msg, _From, State) ->
 	{reply, ok, State}.
+
+
 %% --------------------------------------------------------------------
 %% Function: handle_cast/2
 %% Description: Handling cast messages
@@ -82,7 +91,12 @@ handle_call(Msg, _From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast(Msg, State) ->
+handle_cast({nulldurchlauf, T_absolut, T_delta}, State) ->
+	erlang:send_after((T_delta div 4000) , ?MODULE, sendnow),
+	erlang:send_after((T_delta div 1333), ?MODULE, sendnow),
+    {noreply, State};
+
+handle_cast(Msg, State) ->		
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -92,28 +106,11 @@ handle_cast(Msg, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_info(timeout, State) ->
-	{ok, Socket} = gen_udp:open(?PORT, []),
-    {noreply, State#state{socket = Socket}};
+handle_info(sendnow, State) -> 
+	gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<0:0>>),
+	{noreply, State};
 
-handle_info({udp, _Socket, IPtuple, InPortNo, [0]}, State) ->
-	%%error_logger:info_msg("~n~nFrom IP: ~p~nPort: ~p~nData: ~p~n", [IPtuple, InPortNo, Packet]),
-    %% TODO: Zeitkorrektur (Konstante)
-    T_now = erlang:now(),
-    case State of
-	{MegaSec, Sec, MircoSec} ->
-	    T_delta = (timer:now_diff(T_now, State) div 100000) * 100000,
-	    saw_position:nulldurchlauf(T_now, T_delta),
-		saw_pusher:nulldurchlauf(T_now, T_delta);
-%	    error_logger:info_msg("Durchlaufzeit: ~p ms~n", [T_delta div 1000]);
-	_ ->
-	    ok
-%	    error_logger:info_msg("waiting for second run", [])
-    end,
-    {noreply, T_now};
-
-handle_info(Msg, State) ->
-    %%error_logger:info_msg("Unknown msg ~p~n", [Msg]),
+handle_info(Msg, State) ->		
     {noreply, State}.
 
 %% --------------------------------------------------------------------
@@ -135,11 +132,11 @@ code_change(OldVsn, State, Extra) ->
 %% --------------------------------------------------------------------
 %%% Internal functions
 %% --------------------------------------------------------------------
-send_message() ->
-	ok.
+
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------
+
 %% --------------------------------------------------------------------
 %%% Test functions
 %% --------------------------------------------------------------------

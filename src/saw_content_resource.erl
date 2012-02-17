@@ -46,8 +46,7 @@ allowed_methods(ReqData, Context) ->
 post_is_create(ReqData, Context) ->
 	{false, ReqData, Context}.
 
-process_post(ReqData, Context) ->
-	error_logger:info_msg("--- ~p~n", [wrq:req_body(ReqData)]),
+process_post(ReqData, Context) ->	
 	A = erlang:binary_to_list(wrq:req_body(ReqData)),
 	B = string:tokens(A, ","),
 	saw_sliding_w:set_content([erlang:list_to_integer(X) || X <- B]),

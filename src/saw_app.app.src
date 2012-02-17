@@ -1,4 +1,4 @@
-{application, saw_erl,
+{application, saw_app,
  [
   {description, ""},
   {vsn, "0.1.0"},

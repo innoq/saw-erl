@@ -35,7 +35,7 @@
 
 -define(PORT, 13664).
 -define(HOST, {127,0,0,1}).
-
+-define(OFFSET_DELTA, 4).
 %% ====================================================================
 %% External functions
 %% ====================================================================
@@ -53,7 +53,8 @@ scroll() ->
 -record(state, {	contentraw = "Das ist der default",
 					content,
 					contentlength,
-			   		sawsock}).
+			   		sawsock,
+					offset = 0}).
 %% ====================================================================
 %% Server functions
 %% ====================================================================
@@ -77,7 +78,7 @@ start() ->
 init([]) ->
 	{ok, Socket} = gen_udp:open(13000),
 	{ContentLength, Content} = prepare_dummy_array(),
-    {ok, #state{sawsock=Socket, content=Content, contentlength=ContentLength}, 0}.
+    {ok, #state{sawsock = Socket, content = Content, contentlength = ContentLength, offset = 0}, 0}.
 
 %% --------------------------------------------------------------------
 %% Function: handle_call/3
@@ -105,7 +106,7 @@ handle_cast({print, Spalten_index}, State) ->
     {noreply, State};
 
 handle_cast({scroll}, State) ->		
-    {noreply, State};
+    {noreply, State#state{offset=State#state.offset + ?OFFSET_DELTA}};
 
 handle_cast({set_content, Content}, State) ->	
 	{noreply, State#state{content = Content, contentlength = erlang:length(Content)}}.
@@ -140,7 +141,7 @@ code_change(OldVsn, State, Extra) ->
 %%% Internal functions
 %% --------------------------------------------------------------------
 send_message(State, Spalten_index) ->
-	ByteIndex = Spalten_index rem State#state.contentlength,
+	ByteIndex = (Spalten_index + State#state.offset) rem State#state.contentlength,
 	Byte = lists:nth(ByteIndex+1, State#state.content),
 	
 	Resp= gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<Byte:8>>),

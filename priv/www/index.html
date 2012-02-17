@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<title>Bootstrap, from Twitter</title>
+	<title>Erlang SAW - Configuration assistant</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="description" content="">
 	<meta name="author" content="">
@@ -62,15 +62,28 @@
 			<div class="control-group">
 				<label class="control-label" for="text">Text to render:</label>
 				<div class="controls">
-					<input type="text" id="text" name="text">
+					<input type="text" id="text" name="text" value="Thank god it's friday, Junge! *** ">
 					<span class="help-inline"></span>
 				</div>
 			</div>
 
 			<div class="control-group">
-				<label class="control-label" for="text">Font:</label>
+				<label class="control-label" for="font">Font:</label>
 				<div class="controls">
-					<input type="text" id="font" name="font" value="10px monospace">
+					<input type="text" id="font" name="font" value="9px monospace">
+					<span class="help-inline"></span>
+				</div>
+			</div>
+
+			<div class="control-group">
+				<label class="control-label" for="baseline">Baseline:</label>
+				<div class="controls">
+					<select id="baseline" name="baseline">
+					                <option>bottom</option>
+					                <option>alphabetic</option>
+					                <option>middle</option>
+					                <option>top</option>
+					              </select>
 					<span class="help-inline"></span>
 				</div>
 			</div>

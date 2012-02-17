@@ -19,10 +19,10 @@
 					var index = (row * imageData.width + col) * 4 + 0;
 					if (imageData.data[index] >= 255) {
 						colByte = colByte | (1 << row);
-						
+
 						context2.beginPath();
-					    context2.fillStyle = "#FF0000";
-					    context2.arc(col * scale + (scale/2), row * scale + (scale/2), scale/2, 0, 2 * Math.PI, false);
+						context2.fillStyle = "#FF0000";
+						context2.arc(col * scale + (scale/2), row * scale + (scale/2), scale/2, 0, 2 * Math.PI, false);
 						context2.fill();
 					}
 				}
@@ -31,18 +31,32 @@
 			return res;
 		}
 
-		$("#text, #font").keyup(function(){
+		function renderText(text, font, baseline) {
 			var canvas = document.getElementById("canvas");
 			var context = canvas.getContext('2d');
-			context.font = $("#font").val();
+			context.font = font;
 			canvas.width = context.measureText($("#text").val()).width;
 			canvas.height = 8;
 			context.fillStyle = '#f00';
-			context.font = $("#font").val();
-			context.textBaseline = 'alphabetic';
-			context.fillText($("#text").val(), 0, 8);
+			context.font = font;
+			if (context.mozImageSmoothingEnabled) {
+				context.mozImageSmoothingEnabled = false;
+			}
+			context.textBaseline = baseline;
+			var y = 8;
+			if (baseline == "top") {y = 0};
+			if (baseline == "middle") {y = 4};
+			context.fillText(text, 0, y);
 			readCanvas();
-		})
+		}
+
+		$("#text, #font").keyup(function(){
+			renderText($("#text").val(), $("#font").val(), $("#baseline").val());
+		});
+
+		$("#baseline").change(function(){
+			renderText($("#text").val(), $("#font").val(), $("#baseline").val());
+		});
 
 		$("form").submit(function(e){
 			e.preventDefault();
@@ -50,6 +64,8 @@
 			return false;
 		});
 
+		renderText($("#text").val(), $("#font").val(), $("#baseline").val());
+
 	});
 
-}(jQuery))
+	}(jQuery))
