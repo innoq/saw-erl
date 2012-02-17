@@ -47,8 +47,10 @@ post_is_create(ReqData, Context) ->
 	{false, ReqData, Context}.
 
 process_post(ReqData, Context) ->
-	
-	saw_sliding_w:set_content("Content"),
+	error_logger:info_msg("--- ~p~n", [wrq:req_body(ReqData)]),
+	A = erlang:binary_to_list(wrq:req_body(ReqData)),
+	B = string:tokens(A, ","),
+	saw_sliding_w:set_content([erlang:list_to_integer(X) || X <- B]),
 	{true, ReqData, Context}.
 
 resource_exists(ReqData, Context) ->

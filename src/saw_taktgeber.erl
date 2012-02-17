@@ -97,24 +97,21 @@ handle_info(timeout, State) ->
     {noreply, State#state{socket = Socket}};
 
 handle_info({udp, _Socket, IPtuple, InPortNo, [0]}, State) ->
-%%	error_logger:info_msg("~n~nFrom IP: ~p~nPort: ~p~nData: ~p~n", [IPtuple, InPortNo, Packet]),
+	%%error_logger:info_msg("~n~nFrom IP: ~p~nPort: ~p~nData: ~p~n", [IPtuple, InPortNo, Packet]),
     %% TODO: Zeitkorrektur (Konstante)
     T_now = erlang:now(),
     case State of
 	{MegaSec, Sec, MircoSec} ->
-	    T_delta = timer:now_diff(T_now, State),
+	    T_delta = (timer:now_diff(T_now, State) div 100000) * 100000,
 	    saw_position:nulldurchlauf(T_now, T_delta),
-	    error_logger:info_msg("Durchlaufzeit: ~p ms~n", [T_delta div 1000]);
+	   error_logger:info_msg("Durchlaufzeit: ~p ms~n", [T_delta div 1000]);
 	_ ->
 	    error_logger:info_msg("waiting for second run", [])
     end,
-    
-	       
-	
     {noreply, T_now};
 
 handle_info(Msg, State) ->
-    error_logger:info_msg("Unknown msg ~p~n", [Msg]),
+    %%error_logger:info_msg("Unknown msg ~p~n", [Msg]),
     {noreply, State}.
 
 %% --------------------------------------------------------------------
