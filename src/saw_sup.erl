@@ -24,6 +24,7 @@
 -define(STAKT, {saw_taktgeber, {saw_taktgeber, start_link, []}, transient, 10000, worker, []}).
 -define(SPOS, {saw_position, {saw_position, start_link, []}, transient, 10000, worker, []}).
 -define(SWIN, {saw_sliding_w, {saw_sliding_w, start_link, []}, transient, 10000, worker, []}).
+-define(SPUSSY, {saw_pusher, {saw_pusher, start_link, []}, transient, 10000, worker, []}).
 -define(SWINTAKT, {saw_sliding_w_takt, {saw_sliding_w_takt, start_link, []}, transient, 10000, worker, []}).
 -define(SINPUT, {saw_input, {saw_input, start_link, []}, transient, 10000, worker, []}).
 -define(WEBMACHINE(WebConfig), {webmachine_mochiweb, {webmachine_mochiweb, start, [WebConfig]}, permanent, 5000, worker, dynamic}).
@@ -55,4 +56,4 @@ init([]) ->
                  {dispatch, Dispatch}],
 	MaxRestart = 1,
     MaxTime = 10000,
-    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SWIN, ?SWINTAKT, ?SINPUT, ?WEBMACHINE(WebConfig)]}}.
+    {ok, {{one_for_one, MaxRestart, MaxTime}, [?STAKT, ?SPOS, ?SWIN, ?SWINTAKT, ?SPUSSY, ?SINPUT, ?WEBMACHINE(WebConfig)]}}.
