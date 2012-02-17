@@ -185,5 +185,15 @@ winkel(Y, down, Durchlaufzeit) ->
 -include_lib("eunit/include/eunit.hrl").
 -ifdef(TEST).
 winkel_test() ->
-	winkel(-1, up, 2000).
+	?assertEqual(0.0 ,winkel(0, up, 2000)),
+	?assertEqual(erlang:round(math:pi() /4 * 10000) , erlang:round(winkel(math:sin(math:pi() / 4) , up, 2000) * 10000)),
+	?assertEqual(math:pi() / 2 ,winkel(1, up, 2000)),
+ 	?assertEqual(math:pi() / 2 ,winkel(1, down, 2000)),
+	?assertEqual(erlang:round(3 * math:pi() /4 * 10000) , erlang:round(winkel(math:sin(3 * math:pi() / 4) , down, 2000) * 10000)),
+	?assertEqual(math:pi() ,winkel(0, down, 2000)),
+	?assertEqual(erlang:round(5 * math:pi() /4 * 10000) , erlang:round(winkel(math:sin(5 * math:pi() / 4) , down, 2000) * 10000)),
+	?assertEqual(3 * math:pi() / 2 ,winkel(-1, down, 2000)),
+ 	?assertEqual(3 * math:pi() / 2 ,winkel(-1, up, 2000)),
+	?assertEqual(erlang:round(7 * math:pi() /4 * 10000) , erlang:round(winkel(math:sin(7 * math:pi() / 4) , up, 2000) * 10000)).
+	
 -endif.
