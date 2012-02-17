@@ -107,7 +107,6 @@ handle_cast(Msg, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 handle_info(sendnow, State) -> 
-	io:format("Pushing Now~n"),
 	gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<0:0>>),
 	{noreply, State};
 
