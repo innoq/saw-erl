@@ -60,7 +60,7 @@
 
 		$("form").submit(function(e){
 			e.preventDefault();
-			$.post("http://localhost:8080/content", readCanvas().join(","))
+			$.post("http://localhost:8080/content?offset=" + $("#offset").val(), readCanvas().join(","))
 			return false;
 		});
 
