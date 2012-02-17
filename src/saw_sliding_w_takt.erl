@@ -98,7 +98,7 @@ handle_info(timeout, State) ->
 
 handle_info({timeout, do_work}, State) ->	
 	start_timer(),
-	saw_sliding_w:scroll(),
+	%saw_sliding_w:scroll(),
     {noreply, State}.
 
 %% --------------------------------------------------------------------

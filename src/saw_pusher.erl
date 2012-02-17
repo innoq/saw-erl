@@ -108,6 +108,7 @@ handle_cast(Msg, State) ->
 %% --------------------------------------------------------------------
 handle_info(sendnow, State) -> 
 	gen_udp:send(State#state.sawsock, ?HOST, ?PORT, <<0:0>>),
+    saw_sliding_w:scroll(),
 	{noreply, State};
 
 handle_info(Msg, State) ->		
